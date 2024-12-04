@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                    Int             @id @default(autoincrement())
+  userName              String          @unique
+  email                 String          @unique
+  password              String
+  role                  String          @default("user")
+  passwordResetCode     String?
+  passwordResetExpires  DateTime?
+  passwordResetVerified Boolean?
+  @@index([email])  // Creating index on the email field for faster lookups
+
+  // Relations
+  addresses             Address[]
+  orders                Order[]
+  carts                 Cart[]
+  reviews               ProductReview[]
+}
+
+model ProductReview {
+  id            Int      @id @default(autoincrement())
+  productId     Int // Foreign key, can be related later
+  userId        Int // Foreign key, can be related later
+  userName      String
+  reviewMessage String
+  reviewValue   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  image         String?
+  title         String
+  description   String
+  category      String
+  brand         String
+  price         String
+  salePrice     String?
+  totalStock    String
+  averageReview Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  reviews   ProductReview[]
+  cartItems CartItem[]
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  cartId          Int
+  orderStatus     String
+  paymentMethod   String
+  paymentStatus   String
+  totalAmount     Float
+  orderDate       DateTime @default(now())
+  orderUpdateDate DateTime
+  paymentId       String?
+  payerId         String?
+
+  // Address Info
+  addressId String?
+  address   String?
+  city      String?
+  pincode   String?
+  phone     String?
+  notes     String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  cart Cart @relation(fields: [cartId], references: [id])
+}
+
+model Feature {
+  id        Int      @id @default(autoincrement())
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  Order Order[]
+}
+
+model CartItem {
+  id        Int @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int @default(1)
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  address   String
+  city      String
+  pincode   String
+  phone     String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+}
